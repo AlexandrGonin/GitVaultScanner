@@ -1,0 +1,7 @@
+https://github.com/AlexandrGonin/TEST-REPO
+
+python3 main.py --dir ./testing_data/
+
+python3 -m venv venv
+
+source venv/bin/activate

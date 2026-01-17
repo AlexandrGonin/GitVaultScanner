@@ -1,0 +1,32 @@
+production:
+  adapter: postgresql
+  host: localhost
+  port: 5432
+  database: myapp_production
+  username: prod_user
+  password: "P@ssw0rd2025!Secure"
+  pool: 5
+  timeout: 5000
+
+development:
+  adapter: sqlite3
+  database: db/development.sqlite3
+  username: dev_user
+  password: "dev_pass_123" 
+
+# Redis конфигурация
+redis:
+  url: redis://user:redis_password_2025@localhost:6379/0
+  pool_size: 10
+
+# MongoDB конфигурация
+mongodb:
+  uri: mongodb://admin:mongopass123@localhost:27017/mydb
+  database: mydb
+
+# Внешние сервисы
+external_services:
+  elasticsearch:
+    host: "localhost"
+    port: 9200
+    api_key: "elastic_key_abcdef123456"

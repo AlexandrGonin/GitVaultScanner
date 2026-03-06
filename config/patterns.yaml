@@ -1,0 +1,82 @@
+# patterns.yaml - regex patterns for secret detection
+
+patterns:
+    - name: aws_access_key
+      pattern: "AKIA[0-9A-Z]{16}"
+      severity: high
+      description: AWS Access Key ID
+
+    - name: aws_secret_key
+      pattern: "[0-9a-zA-Z/+]{40}"
+      severity: high
+      description: AWS Secret Access Key
+
+    - name: github_token
+      pattern: "gh[psu]_[0-9a-zA-Z]{36}"
+      severity: high
+      description: GitHub Personal Access Token
+
+    - name: slack_token
+      pattern: "xox[baprs]-[0-9a-zA-Z]{10,48}"
+      severity: high
+      description: Slack Token
+
+    - name: private_key
+      pattern: "-----BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY-----"
+      severity: critical
+      description: Private Key
+
+    - name: jwt_token
+      pattern: 'eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+'
+      severity: high
+      description: JWT Token
+
+    - name: google_api_key
+      pattern: 'AIza[0-9A-Za-z\-_]{35}'
+      severity: high
+      description: Google API Key
+
+    - name: stripe_live_key
+      pattern: "(sk|pk)_live_[0-9a-zA-Z]{24,}"
+      severity: high
+      description: Stripe Live API Key
+
+    - name: stripe_test_key
+      pattern: "(sk|pk)_test_[0-9a-zA-Z]{24,}"
+      severity: medium
+      description: Stripe Test API Key
+
+    - name: twilio_auth_token
+      pattern: "SK[0-9a-f]{32}"
+      severity: high
+      description: Twilio Auth Token
+
+    - name: sendgrid_api_key
+      pattern: 'SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}'
+      severity: high
+      description: SendGrid API Key
+
+    - name: discord_bot_token
+      pattern: '[MN][A-Za-z\d]{23}\.[A-Za-z\d]{6}'
+      severity: high
+      description: Discord Bot Token
+
+    - name: telegram_bot_token
+      pattern: "[0-9]{8,10}:[a-zA-Z0-9_-]{35}"
+      severity: high
+      description: Telegram Bot Token
+
+    - name: mailgun_api_key
+      pattern: "key-[0-9a-f]{32}"
+      severity: high
+      description: Mailgun API Key
+
+    - name: database_connection
+      pattern: '(postgres(?:ql)?|mysql|mongodb(?:\\+srv)?|redis|rediss)://[^:]+:[^@]+@'
+      severity: high
+      description: Database Connection String with Credentials
+
+    - name: generic_api_key
+      pattern: '[a-zA-Z0-9_\-]{20,40}'
+      severity: medium
+      description: Potential API Key

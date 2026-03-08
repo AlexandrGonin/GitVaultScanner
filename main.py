@@ -123,6 +123,22 @@ def main():
             print(f"[*] pulling docker image: {args.docker}")
             image_path = pull_docker_image(args.docker, temp_dir)
             target_path = extract_image_layers(image_path, os.path.join(temp_dir, "fs"))
+
+            if os.path.exists(target_path):
+                files = os.listdir(target_path)
+                # checking app dir exists
+                app_path = os.path.join(target_path, "app")
+                if os.path.exists(app_path) and os.path.isdir(app_path):
+                    target_path = app_path
+                    print(f"[*] scanning app directory: {app_path}")
+                else:
+                    # if there're no app start to find common locations
+                    for possible_path in ["usr/src/app", "var/www", "home/app", "root"]:
+                        test_path = os.path.join(target_path, possible_path)
+                        if os.path.exists(test_path) and os.path.isdir(test_path):
+                            target_path = test_path
+                            break
+
             target_name = args.docker.replace("/", "_").replace(":", "_")
             scan_type = "docker"
 

@@ -1,8 +1,8 @@
-# gitvaultscanner
+# GitVaultScanner
 
-a static analysis tool for finding hardcoded secrets, api keys, and credentials in code repositories and docker images.
+A static analysis tool for finding hardcoded secrets, api keys, and credentials in code repositories and docker images.
 
-## features
+## Features
 
 - scan github repositories
 - scan local directories
@@ -18,7 +18,7 @@ a static analysis tool for finding hardcoded secrets, api keys, and credentials 
 - check passwords against have i been pwned
 - multiple output formats: console, json, sarif, html
 
-## installation
+## Installation
 
 ```bash
 # clone the repository
@@ -31,3 +31,7 @@ source venv/bin/activate  # on windows: venv\scripts\activate
 
 # install dependencies
 pip install -r requirements.txt
+
+# or with Makefile
+make install
+```

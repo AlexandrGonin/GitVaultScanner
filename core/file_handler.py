@@ -33,14 +33,20 @@ def get_files(root_dir: str, extensions: Optional[List[str]] = None) -> List[str
         ".tox",
     }
 
-    # проверяем что root_dir существует
+    # checking root_dir exists
     if not os.path.exists(root_dir):
         return files
 
+    # show dir content
+    try:
+        os.listdir(root_dir)
+    except Exception:
+        return files
+
+    # проходим по всем файлам
     for root, dirs, filenames in os.walk(root_dir):
         # modify dirs in-place to skip unwanted directories
         dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]
-
         for filename in filenames:
             file_path = os.path.join(root, filename)
 
@@ -51,7 +57,6 @@ def get_files(root_dir: str, extensions: Optional[List[str]] = None) -> List[str
                     files.append(file_path)
             else:
                 files.append(file_path)
-
     return files
 
 

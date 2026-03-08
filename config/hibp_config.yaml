@@ -1,0 +1,10 @@
+# HIBP configuration
+enable_hibp: true
+hibp_timeout: 5
+hibp_user_agent: "gitvaultscanner/1.0"
+
+# other settings
+validate_aws: false
+validate_jwt: false
+entropy_threshold: 4.2
+min_secret_length: 8

@@ -80,7 +80,7 @@ class TestDockerParser:
 
         findings = self.parser.parse(file_path)
         assert len(findings) > 0
-        assert findings[0]["type"] == "env_variable"
+        assert "env_variable" in findings[0]["type"]
 
     def test_detect_run_secret(self):
         """test detection of secret in RUN command"""

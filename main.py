@@ -23,6 +23,19 @@ from utils.git_utils import clone_repository
 from utils.progress_bar import ProgressBar
 from utils.temp_cleaner import cleanup_temp_dirs
 
+banner = """
+    ╔════════════════════════════════════════════════════════════════╗
+    ║                                                                ║
+    ║   █▀▀ █ ▀█▀ █ █ ▄▀█ █ █ █   ▀█▀ █▀ █▀▀ ▄▀█ █▄ █ █▄ █ █▀▀ █▀█   ║
+    ║   █▄█ █  █  ▀▄▀ █▀█ █▄█ █▄▄  █  ▄█ █▄▄ █▀█ █ ▀█ █ ▀█ ██▄ █▀▄   ║
+    ║                                                                ║
+    ║         GitHub & Local Directory Secrets Scanner               ║
+    ║         Detects hardcoded credentials, API keys, tokens        ║
+    ╚════════════════════════════════════════════════════════════════╝
+"""
+
+print(banner)
+
 
 def parse_arguments():
     """parse command line arguments and return args object"""
@@ -147,12 +160,19 @@ def main():
         # calculate scan time
         scan_time = (datetime.now() - start_time).total_seconds()
 
+        # get HIBP statistics if used
+        hibp_stats = None
+        if args.hibp and hasattr(scanner, "hibp_checker") and scanner.hibp_checker:
+            hibp_stats = scanner.hibp_checker.get_statistics()
+            # reset for next scan (if any)
+            scanner.hibp_checker.reset_statistics()
+
         # generate report
         print("[*] generating report...")
 
         if args.format == "console" or not args.output:
             ConsoleReporter.print_report(
-                all_findings, target_name, scan_time, scan_type
+                all_findings, target_name, scan_time, scan_type, hibp_stats
             )
 
         if args.output:
@@ -162,19 +182,39 @@ def main():
 
             if output_format == "json":
                 JsonReporter.save_report(
-                    all_findings, target_name, scan_time, scan_type, args.output
+                    all_findings,
+                    target_name,
+                    scan_time,
+                    scan_type,
+                    args.output,
+                    hibp_stats,
                 )
             elif output_format == "sarif":
                 SarifReporter.save_report(
-                    all_findings, target_name, scan_time, scan_type, args.output
+                    all_findings,
+                    target_name,
+                    scan_time,
+                    scan_type,
+                    args.output,
+                    hibp_stats,
                 )
             elif output_format == "html":
                 HtmlReporter.save_report(
-                    all_findings, target_name, scan_time, scan_type, args.output
+                    all_findings,
+                    target_name,
+                    scan_time,
+                    scan_type,
+                    args.output,
+                    hibp_stats,
                 )
             else:
                 ConsoleReporter.save_text_report(
-                    all_findings, target_name, scan_time, scan_type, args.output
+                    all_findings,
+                    target_name,
+                    scan_time,
+                    scan_type,
+                    args.output,
+                    hibp_stats,
                 )
 
             print(f"[*] report saved to: {args.output}")

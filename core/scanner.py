@@ -42,9 +42,10 @@ class Scanner:
         self.password_detector = PasswordDetector(self.config)
 
         # initialize optional components
-        enable_hibp = self.config.get("enable_hibp", False)
-        self.hibp_checker = HibpChecker(self.config) if enable_hibp else None
+        # HIBP checker - создаем всегда, он будет использоваться только если передан флаг hibp
+        self.hibp_checker = HibpChecker(self.config)
 
+        # validators
         validate_aws = self.config.get("validate_aws", False)
         self.aws_validator = AwsKeyValidator(self.config) if validate_aws else None
 
@@ -97,7 +98,7 @@ class Scanner:
         if validate and findings:
             findings = self._validate_findings(findings)
 
-        # check against hibp if enabled
+        # check against hibp if enabled - ТЕПЕРЬ ВСЕГДА ПРОВЕРЯЕМ ПО ФЛАГУ
         if hibp and findings and self.hibp_checker is not None:
             findings = self._check_hibp(findings)
 
@@ -139,7 +140,7 @@ class Scanner:
             return findings
 
         for finding in findings:
-            if finding.get("type") == "password" and self.hibp_checker is not None:
+            if finding.get("type") == "password":
                 value = finding.get("value")
                 if value is not None:
                     pwned_count = self.hibp_checker.check_password(str(value))

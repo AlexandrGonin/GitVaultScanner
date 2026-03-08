@@ -5,8 +5,6 @@ docker_utils.py - docker image handling utilities
 import os
 import subprocess
 import tarfile
-import tempfile
-from pathlib import Path
 
 from core.exceptions import DockerPullError
 
@@ -22,7 +20,7 @@ def pull_docker_image(image_name: str, target_dir: str) -> str:
 
     try:
         # pull the image
-        pull_result = subprocess.run(
+        subprocess.run(
             ["docker", "pull", image_name],
             check=True,
             capture_output=True,
@@ -31,7 +29,7 @@ def pull_docker_image(image_name: str, target_dir: str) -> str:
         )
 
         # save image to tar
-        save_result = subprocess.run(
+        subprocess.run(
             ["docker", "save", image_name, "-o", image_path],
             check=True,
             capture_output=True,

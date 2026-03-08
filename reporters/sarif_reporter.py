@@ -4,7 +4,7 @@ sarif_reporter.py - sarif format for github security scanning
 
 import json
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class SarifReporter:
@@ -17,6 +17,7 @@ class SarifReporter:
         scan_time: float,
         scan_type: str,
         output_path: str,
+        hibp_stats: Optional[Dict] = None,
     ):
         """save findings as sarif file"""
 
@@ -33,7 +34,7 @@ class SarifReporter:
                             "rules": SarifReporter._create_rules(findings),
                         }
                     },
-                    "results": SarifReporter._create_results(findings),
+                    "results": SarifReporter._create_results(findings, hibp_stats),
                     "invocations": [
                         {
                             "executionSuccessful": True,
@@ -88,7 +89,9 @@ class SarifReporter:
         return rules
 
     @staticmethod
-    def _create_results(findings: List[Dict[str, Any]]) -> List[Dict]:
+    def _create_results(
+        findings: List[Dict[str, Any]], hibp_stats: Optional[Dict] = None
+    ) -> List[Dict]:
         """create sarif results from findings"""
         results = []
 
@@ -96,12 +99,15 @@ class SarifReporter:
             file_path = f.get("file", "unknown")
             line = f.get("line", 1)
 
+            # build message with HIBP info if available
+            message = f"Found {f.get('type', 'secret')}"
+            if f.get("pwned"):
+                message += f" (pwned: {f.get('pwned_count', 0):,} times)"
+
             result = {
                 "ruleId": f.get("type", "unknown"),
                 "ruleIndex": 0,
-                "message": {
-                    "text": f"Found {f.get('type', 'secret')}: {f.get('value', '')[:50]}"
-                },
+                "message": {"text": message},
                 "locations": [
                     {
                         "physicalLocation": {
@@ -114,13 +120,19 @@ class SarifReporter:
             }
 
             # add severity as property
-            result["properties"] = {
+            properties = {
                 "severity": f.get("severity", "medium"),
                 "security-severity": SarifReporter._severity_to_score(
                     f.get("severity", "medium")
                 ),
             }
 
+            # add HIBP info to properties
+            if f.get("pwned"):
+                properties["pwned"] = True
+                properties["pwned_count"] = f.get("pwned_count", 0)
+
+            result["properties"] = properties
             results.append(result)
 
         return results

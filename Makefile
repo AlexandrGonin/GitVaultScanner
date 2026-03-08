@@ -5,32 +5,30 @@ help:
 	@echo "available targets:"
 	@echo "  install     install dependencies"
 	@echo "  test        run tests"
-	@echo "  lint        run linter"
 	@echo "  clean       clean temporary files"
 	@echo "  run         run scanner on current directory"
-	@echo "  docker-test test docker image scanning"
 
 install:
 	pip install -r requirements.txt
 	pip install -r requirements-dev.txt 2>/dev/null || true
 
 test:
+	pip install -e .
 	pytest tests/ -v --cov=core --cov=parsers --cov=detectors
-
-lint:
-	flake8 core/ parsers/ detectors/ utils/ reporters/
-	black --check core/ parsers/ detectors/ utils/ reporters/
+	rm -rf gitvaultscanner.egg-info/
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name "*.log" -delete
+	find . -type f -name "*.html" -delete
+	find . -type f -name "*.json" -delete
+	find . -type f -name "*.coverage" -delete
+	find . -type f -name "*.sarif" -delete
 	rm -rf .pytest_cache
 	rm -rf htmlcov
 	rm -rf reports/
+	rm -rf gitvaultscanner.egg-info/
 
 run:
 	python main.py --dir .
-
-docker-test:
-	python main.py --docker alpine:latest --output docker-report.json --format json

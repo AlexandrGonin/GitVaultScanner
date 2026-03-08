@@ -4,7 +4,7 @@ json_reporter.py - json output formatting
 
 import json
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class JsonReporter:
@@ -17,6 +17,7 @@ class JsonReporter:
         scan_time: float,
         scan_type: str,
         output_path: str,
+        hibp_stats: Optional[Dict] = None,
     ):
         """save findings as json file"""
 
@@ -36,6 +37,10 @@ class JsonReporter:
             },
             "findings": findings,
         }
+
+        # add HIBP statistics if available
+        if hibp_stats and hibp_stats.get("total_pwned_found", 0) > 0:
+            report["hibp_statistics"] = hibp_stats
 
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)

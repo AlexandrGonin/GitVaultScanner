@@ -3,7 +3,7 @@ password_detector.py - detector for passwords and credentials
 """
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 
 class PasswordDetector:
@@ -12,173 +12,118 @@ class PasswordDetector:
     def __init__(self, config: Optional[Dict] = None):
         self.config = config or {}
 
-        # password patterns in assignments
-        self.password_assignments = [
+        # patterns for password finding
+        self.patterns = [
+            # simple assignment
             (
                 re.compile(r'password\s*=\s*[\'"]([^\'"]+)[\'"]', re.IGNORECASE),
-                "password_eq",
+                "password_assign",
+                "high",
             ),
             (
                 re.compile(r'passwd\s*=\s*[\'"]([^\'"]+)[\'"]', re.IGNORECASE),
-                "passwd_eq",
+                "password_assign",
+                "high",
             ),
-            (re.compile(r'pwd\s*=\s*[\'"]([^\'"]+)[\'"]', re.IGNORECASE), "pwd_eq"),
-            (re.compile(r'pass\s*=\s*[\'"]([^\'"]+)[\'"]', re.IGNORECASE), "pass_eq"),
-        ]
-
-        # password patterns in dictionaries
-        self.password_dict = [
+            (
+                re.compile(r'pwd\s*=\s*[\'"]([^\'"]+)[\'"]', re.IGNORECASE),
+                "password_assign",
+                "high",
+            ),
+            (
+                re.compile(r'pass\s*=\s*[\'"]([^\'"]+)[\'"]', re.IGNORECASE),
+                "password_assign",
+                "high",
+            ),
+            # into json/yaml
             (
                 re.compile(
-                    r'[\'"]password[\'"]\s*:\s*[\'"]([^\'"]+)[\'"]', re.IGNORECASE
+                    r'["\']password["\']\s*:\s*["\']([^"\']+)["\']', re.IGNORECASE
                 ),
-                "dict_password",
-            ),
-            (
-                re.compile(
-                    r'[\'"]passwd[\'"]\s*:\s*[\'"]([^\'"]+)[\'"]', re.IGNORECASE
-                ),
-                "dict_passwd",
-            ),
-        ]
-
-        # connection string patterns
-        self.connection_strings = [
-            (re.compile(r"postgres(?:ql)?://[^:]+:([^@]+)@"), "postgres_pwd"),
-            (re.compile(r"mysql://[^:]+:([^@]+)@"), "mysql_pwd"),
-            (re.compile(r"mongodb(?:\+srv)?://[^:]+:([^@]+)@"), "mongodb_pwd"),
-            (re.compile(r"redis://[^:]+:([^@]+)@"), "redis_pwd"),
-            (re.compile(r"rediss://[^:]+:([^@]+)@"), "rediss_pwd"),
-        ]
-
-        # function parameter patterns
-        self.function_params = [
-            (
-                re.compile(
-                    r'connect\([^)]*password=([\'"][^\'"]+[\'"])', re.IGNORECASE
-                ),
-                "connect_pwd",
-            ),
-            (
-                re.compile(r'login\([^)]*password=([\'"][^\'"]+[\'"])', re.IGNORECASE),
-                "login_pwd",
+                "password_json",
+                "high",
             ),
             (
                 re.compile(
-                    r'authenticate\([^)]*password=([\'"][^\'"]+[\'"])', re.IGNORECASE
+                    r'["\']passwd["\']\s*:\s*["\']([^"\']+)["\']', re.IGNORECASE
                 ),
-                "auth_pwd",
+                "password_json",
+                "high",
             ),
+            # db connection lines
+            (re.compile(r"postgresql?://[^:]+:([^@]+)@"), "db_password", "high"),
+            (re.compile(r"mysql://[^:]+:([^@]+)@"), "db_password", "high"),
+            (re.compile(r"mongodb://[^:]+:([^@]+)@"), "db_password", "high"),
+            (re.compile(r"redis://:([^@]+)@"), "db_password", "high"),
+            (re.compile(r"rediss://:([^@]+)@"), "db_password", "high"),
         ]
 
-        # weak password patterns (to flag)
+        # week passwords
         self.weak_passwords = [
-            re.compile(r"^password$", re.IGNORECASE),
-            re.compile(r"^123456"),
-            re.compile(r"^qwerty"),
-            re.compile(r"^admin"),
-            re.compile(r"^letmein"),
-            re.compile(r"^welcome"),
-            re.compile(r"^monkey"),
-            re.compile(r"^abc123"),
+            "password",
+            "123456",
+            "qwerty",
+            "admin",
+            "letmein",
+            "welcome",
+            "monkey",
+            "abc123",
+            "password123",
+            "passw0rd",
+            "admin123",
         ]
 
     def detect(self, line: str, file_path: str, line_num: int) -> List[Dict[str, Any]]:
         """detect passwords in a line"""
         findings = []
 
-        # check password assignments
-        for pattern, finding_type in self.password_assignments:
+        for pattern, pwd_type, severity in self.patterns:
             matches = pattern.findall(line)
             for match in matches:
-                if self._is_actual_password(match):
-                    findings.append(
-                        self._create_finding(file_path, line_num, finding_type, match)
-                    )
+                # getting str value from match
+                match_str = self._extract_string(match)
 
-        # check dictionary patterns
-        for pattern, finding_type in self.password_dict:
-            matches = pattern.findall(line)
-            for match in matches:
-                if self._is_actual_password(match):
-                    findings.append(
-                        self._create_finding(file_path, line_num, finding_type, match)
-                    )
+                if match_str and len(match_str) >= 4:
+                    # checking for dublicates
+                    is_duplicate = False
+                    for f in findings:
+                        if f.get("value") == match_str:
+                            is_duplicate = True
+                            break
 
-        # check connection strings
-        for pattern, finding_type in self.connection_strings:
-            match = pattern.search(line)
-            if match:
-                password = match.group(1)
-                if password and len(password) >= 4:
-                    findings.append(
-                        self._create_finding(
-                            file_path,
-                            line_num,
-                            finding_type,
-                            password,
-                            connection_string=match.group(0)[:100],
+                    if not is_duplicate:
+                        # determine the severity
+                        if match_str.lower() in self.weak_passwords:
+                            final_severity = "medium"
+                        else:
+                            final_severity = severity
+
+                        findings.append(
+                            {
+                                "file": file_path,
+                                "line": line_num,
+                                "type": "password",
+                                "subtype": pwd_type,
+                                "value": match_str[:50] + "..."
+                                if len(match_str) > 50
+                                else match_str,
+                                "severity": final_severity,
+                                "length": len(match_str),
+                            }
                         )
-                    )
-
-        # check function parameters
-        for pattern, finding_type in self.function_params:
-            matches = pattern.findall(line)
-            for match in matches:
-                # strip quotes
-                password = match.strip("'\"")
-                if self._is_actual_password(password):
-                    findings.append(
-                        self._create_finding(
-                            file_path, line_num, finding_type, password
-                        )
-                    )
 
         return findings
 
-    def _is_actual_password(self, password: str) -> bool:
-        """determine if string is likely an actual password"""
-        # too short
-        if len(password) < 4:
-            return False
-
-        # placeholder values
-        placeholders = ["your_password", "password123", "changeme", "secret"]
-        if password.lower() in placeholders:
-            return False
-
-        # check if it's a weak password (still a password, just weak)
-        is_weak = any(p.match(password) for p in self.weak_passwords)
-
-        # it's a password if it has mixed characteristics
-        has_letter = any(c.isalpha() for c in password)
-        has_digit = any(c.isdigit() for c in password)
-
-        return has_letter or has_digit or is_weak
-
-    def _create_finding(
-        self, file_path: str, line_num: int, finding_type: str, password: str, **kwargs
-    ) -> Dict[str, Any]:
-        """create a password finding"""
-        severity = "high"
-
-        # check if weak password
-        if any(p.match(password) for p in self.weak_passwords):
-            severity = "medium"
-
-        # check if placeholder
-        if password.lower() in ["password", "secret", "changeme"]:
-            severity = "low"
-
-        finding = {
-            "file": file_path,
-            "line": line_num,
-            "type": "password",
-            "subtype": finding_type,
-            "value": password[:50] + "..." if len(password) > 50 else password,
-            "severity": severity,
-            "length": len(password),
-        }
-
-        finding.update(kwargs)
-        return finding
+    def _extract_string(self, match: Union[str, tuple, List, Any]) -> str:
+        """getting the str from the result regex match"""
+        if isinstance(match, str):
+            return match
+        elif isinstance(match, (tuple, list)):
+            # if it's tuple or list
+            for item in match:
+                if item and isinstance(item, str):
+                    return item
+            return ""
+        else:
+            # if it's sth else
+            return str(match) if match else ""

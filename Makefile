@@ -1,5 +1,5 @@
 # makefile for gitvaultscanner
-.PHONY: help install test lint clean run docker-test
+.PHONY: help install test clean run
 
 help:
 	@echo "available targets:"

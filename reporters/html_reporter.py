@@ -119,7 +119,7 @@ class HtmlReporter:
         </div>
 """
 
-        # HIBP statistics - ВСЕГДА показываем секцию, если HIBP использовался
+        # HIBP statistics
         if hibp_stats is not None:
             html += f"""
         <div class="hibp-stats">
